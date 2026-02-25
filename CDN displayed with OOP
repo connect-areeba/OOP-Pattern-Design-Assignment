@@ -1,0 +1,59 @@
+
+Abstract Base Class: Server
+
+Attributes:
+String ipAddress: The unique identifier.
+Location coordinates: Physical GPS or region data.
+Status health: (Online, Offline, High Load).
+
+Methods:
+receiveRequest(Request r): Initial entry point for traffic.
+sendResponse(Data d): Packages and sends data back.
+
+Sub-Class: EdgeServer (Inherits from Server)
+
+Unique Attributes:
+Map<String, Content> localCache: A key-value store of cached files.
+int maxStorage: The capacity limit for caching.
+int currentLoad: Tracks how many users are currently connected.
+
+Unique Methods:
+checkCache(String contentID): Boolean check to see if content exists locally.
+fetchFromOrigin(OriginServer o): Triggered on a "Cache Miss."
+purgeCache(String contentID): Removes stale data.
+
+Sub-Class: OriginServer (Inherits from Server)
+
+Unique Attributes:
+Database masterStorage: The permanent home of all assets.
+List<EdgeServer> subscribers: A list of edge servers to notify of updates.
+
+Unique Methods:
+provideMasterCopy(String contentID): Serves the definitive version of a file.
+notifySubscribers(): Used in the Observer Pattern to tell edge servers to update.
+
+2. Supporting Classes & Objects
+The Content Object
+This represents the actual file being delivered (an image, video, or script).
+Attributes:
+String id: The URL/Name.
+Binary data: The actual bits.
+DateTime ttl (Time To Live): The expiration date of the cache.
+int version: To track updates.
+The RequestRouter (The Controller/Facade)
+This isn't a server, but the "brain" that directs the user.
+Attributes:
+List<EdgeServer> networkMap: A registry of all available nodes.
+Methods:
+findNearestNode(UserLocation u): Uses the Strategy Pattern to find the best EdgeServer object.
+
+3. The Interaction Flow (The Object "Conversation")
+Here is how these objects interact when a User tries to load a photo:
+Selection: The User object sends a request to the RequestRouter.
+Polymorphism in Action: The RequestRouter calls findNearestNode(). It looks at its networkMap and selects a specific instance of an EdgeServer (e.g., London_Node_01).
+The Request: The User calls London_Node_01.receiveRequest(photo_request).
+Encapsulation & Logic:
+The EdgeServer runs checkCache().
+Scenario A (Cache Hit): It immediately calls sendResponse() using its own localCache.
+Scenario B (Cache Miss): The EdgeServer object "talks" to the OriginServer object using fetchFromOrigin().
+Update: The OriginServer calls provideMasterCopy(). The EdgeServer stores this in its localCache attribute for the next user and then finishes by calling sendResponse().
